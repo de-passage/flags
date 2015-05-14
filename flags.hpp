@@ -34,18 +34,20 @@
 #define DPSG_PP_EXPAND_7(a, b, c, d, e, f, g) DPSG_PP_EXPAND_6(a, b, c, d, e, f), g = 1 << 6
 #define DPSG_PP_EXPAND_8(a, b, c, d, e, f, g, h) DPSG_PP_EXPAND_7(a, b, c, d, e, f, g), h = 1 << 7
 
-#define DPSG_DECLARE_FLAG_(type, name, count, ...) 					\
-	class name														\
-		: dpsg::detail::BaseFlag<type, count> { 					\
-		typedef BaseFlag<type, count> Base;							\
+#define DPSG_DECLARE_FLAG_(TYPE, NAME, COUNT, ...) 					\
+	class NAME														\
+		: dpsg::detail::BaseFlag<TYPE, COUNT> { 					\
+		typedef BaseFlag<TYPE, COUNT> Base;							\
 		public:														\
-		enum {DPSG_PP_EXPAND(count, __VA_ARGS__)}; 					\
-		name() : Base(Base::Count) {}								\
-		name(type i) : Base(i) {} 									\
+		enum {DPSG_PP_EXPAND(COUNT, __VA_ARGS__)}; 					\
+		NAME() : Base(Base::Count) {}								\
+		NAME(TYPE i) : Base(i) {} 									\
 			using Base::is_set;										\
 			using Base::set;										\
 			using Base::unset;										\
 			using Base::toggle;										\
+			using Base::Count;										\
+			using Base::type;										\
 	};
 
 #define DPSG_DECLARE_FLAG(type, name, ...) DPSG_DECLARE_FLAG_(type, name, DPSG_PP_NARG(__VA_ARGS__), __VA_ARGS__)
