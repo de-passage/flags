@@ -11,6 +11,7 @@
 #define DPSG_FLAGS_HPP
 
 #include <iterator>
+#include <type_traits>
 
 #define DPSG_PP_NARG(...) \
 	DPSG_PP_NARG_(__VA_ARGS__, DPSG_PP_RSEQ_N())
@@ -38,8 +39,12 @@
 
 #define DPSG_DECLARE_FLAG_(TYPE, NAME, COUNT, ...) 					\
 	class NAME														\
-		: public dpsg::detail::BaseFlag<TYPE, COUNT> {				\
-		typedef BaseFlag<TYPE, COUNT> Base;							\
+		: public dpsg::detail::BaseFlag<							\
+			typename dpsg::detail::filter_type<TYPE>::type, COUNT>	\
+	{																\
+		typedef BaseFlag<											\
+			typename dpsg::detail::filter_type<TYPE>::type			\
+			, COUNT> Base;											\
 		public:														\
 		enum {DPSG_PP_EXPAND(COUNT, __VA_ARGS__)}; 					\
 		NAME() : Base(Base::Count) {}								\
@@ -50,6 +55,9 @@
 
 namespace dpsg { namespace detail
 {
+
+template<class T>
+	struct filter_type { typedef typename std::remove_cv<typename std::make_unsigned<T>::type>::type type; };
 
 template<class T, char C>
 class BaseFlag
@@ -67,43 +75,59 @@ class BaseFlag
 		{
 			typedef std::iterator<std::random_access_iterator_tag, proxy> traits;
 			typedef typename traits::difference_type difference_type;
+
 			public:
 				iterator() = delete;
-				iterator(this_t r, count_t p = 0) : _ref(r), _pos(p), _hack(r, p) {bound();}
-				inline iterator& operator++() {incr(); return *this;}
+				iterator(this_t r, count_t p = 0) : _proxy(r, 1) {move(p);}
+				inline iterator& operator++() {move(); return *this;}
 				inline iterator& operator++(int) 
-					{iterator tmp = *this; incr(); return tmp;}
-				inline bool operator==(const iterator& it) 
-					{return (_pos == it._pos) && (_ref == it._ref);}
+					{iterator tmp = *this; move(); return tmp;}
+				inline bool operator==(const iterator& it) { return _proxy.is_same(it._proxy); }
 				inline bool operator!=(const iterator& it) {return !(*this == it);}
-				inline proxy operator*() {return proxy(_ref, _pos);}
-				inline proxy* operator->() {_hack._pos = 1 << _pos; return &_hack;}
+				inline proxy operator*() {return _proxy;}
+				inline proxy* operator->() {return &_proxy;}
 
 			private:
-				count_t _pos;
-				this_t _ref;
-				mutable proxy _hack; 
-				inline void incr(difference_type offset = 1) {_pos += offset; bound();}
-				inline void bound() 
+				proxy _proxy;
+				inline void move(difference_type offset = 1) 
 				{
-					if(_pos < 0) 
-						_pos = 0; 
-					else if(_pos > _ref.Count) 
-						_pos = Count;
+					type& p = _proxy._pos;
+					if(offset > 0) 
+					{
+						if(p == 0)
+						{
+							p = 1;
+							if(--offset == 0) return;
+						}
+						if(p == ~Count) 
+							return;
+						else if(((p << offset) > (1 << (Count-1))) || (p << offset) == 0)
+							p = ~Count;
+						else 
+							p <<= offset;
+					}
+					else if(offset < 0)
+					{
+						offset = -offset;
+						p >> offset;
+					}
 				}
 		};
 
 		class proxy
 		{
 			public: 
-				proxy(this_t r, count_t p) : _ref(r), _pos(1 << p) {}
+				proxy(this_t r, count_t p) : _ref(r), _pos(p) {}
 				proxy& operator=(bool b) { b ? set() : unset(); return *this;}
 				operator bool() const { return is_set(); }
 				void set() { _ref.set(_pos); } 
 				void unset() { _ref.unset(_pos); }
 				void toggle() { _ref.toggle(_pos); }
 				bool is_set() const { return _ref.is_set(_pos); }
+				type debug() const { return _pos; }
 			private:
+				bool is_same(const proxy& p)
+					{return (_pos == p._pos) && (_ref == p._ref);}
 				friend class iterator;
 				this_t _ref;
 				type _pos;	
