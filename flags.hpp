@@ -1,5 +1,13 @@
-#ifndef DPSG_FLAG_HPP
-#define DPSG_FLAG_HPP
+/********************************************************
+ * Wrapper class and helpers for flag manipulation
+ *
+ * Author: Sylvain Leclercq <maisbiensurqueoui@gmail.com>
+ * Created: 		4/14/2014
+ * Last modified: 	5/14/2014
+ *******************************************************/
+
+#ifndef DPSG_FLAGS_HPP
+#define DPSG_FLAGS_HPP
 
 
 #define DPSG_PP_NARG(...) \
@@ -26,18 +34,21 @@
 #define DPSG_PP_EXPAND_7(a, b, c, d, e, f, g) DPSG_PP_EXPAND_6(a, b, c, d, e, f), g = 1 << 6
 #define DPSG_PP_EXPAND_8(a, b, c, d, e, f, g, h) DPSG_PP_EXPAND_7(a, b, c, d, e, f, g), h = 1 << 7
 
-#define DPSG_DEFINE_FLAG_(type, name, count, ...) 				\
-	class name final : public									\
-		dpsg::detail::BaseFlag<type, count> { 					\
-		typedef BaseFlag<type, count> Base;						\
-		public:													\
-		enum {DPSG_PP_EXPAND(count, __VA_ARGS__)}; 				\
-		name() : Base(Base::Count) {}							\
-		name(type i) : Base(i) {} 								\
-		~name() = default;										\
+#define DPSG_DECLARE_FLAG_(type, name, count, ...) 					\
+	class name														\
+		: dpsg::detail::BaseFlag<type, count> { 					\
+		typedef BaseFlag<type, count> Base;							\
+		public:														\
+		enum {DPSG_PP_EXPAND(count, __VA_ARGS__)}; 					\
+		name() : Base(Base::Count) {}								\
+		name(type i) : Base(i) {} 									\
+			using Base::is_set;										\
+			using Base::set;										\
+			using Base::unset;										\
+			using Base::toggle;										\
 	};
 
-#define DPSG_DEFINE_FLAG(type, name, ...) DPSG_DEFINE_FLAG_(type, name, DPSG_PP_NARG(__VA_ARGS__), __VA_ARGS__)
+#define DPSG_DECLARE_FLAG(type, name, ...) DPSG_DECLARE_FLAG_(type, name, DPSG_PP_NARG(__VA_ARGS__), __VA_ARGS__)
 
 namespace dpsg { namespace detail
 {
@@ -48,11 +59,15 @@ class BaseFlag
 	public:
 		typedef T type;
 		constexpr static T Count = C;
+		constexpr inline operator type() {return _value;}
+		inline bool is_set(type v) const {return _value & v;}
+		inline void set(type v) {_value |= v;}
+		inline void unset(type v) {_value ^= v;}
+		inline void toggle(type v) {is_set(v) ? unset(v) : set(v);}
 
 	protected:
 		BaseFlag(type i) : _value(i) {} 
 		BaseFlag() = default;
-		virtual ~BaseFlag() = 0;
 	
 	private: 
 		T _value;
