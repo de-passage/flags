@@ -2,9 +2,7 @@
  * Wrapper class and helpers for flag manipulation
  *
  * Author: Sylvain Leclercq <maisbiensurqueoui@gmail.com>
- * Created: 		4/14/2014
- * Last modified: 	5/14/2014
- * Version: 0.0.1
+ * Version: 0.1.0
  *******************************************************/
 
 #ifndef DPSG_FLAGS_HPP
@@ -40,111 +38,157 @@
 #define DPSG_DECLARE_FLAG_(TYPE, NAME, COUNT, ...) 					\
 	class NAME														\
 		: public dpsg::detail::BaseFlag<							\
-			typename dpsg::detail::filter_type<TYPE>::type, COUNT>	\
-	{																\
+			typename dpsg::detail::filter_type<TYPE>::type, COUNT> {\
 		typedef BaseFlag<											\
 			typename dpsg::detail::filter_type<TYPE>::type			\
 			, COUNT> Base;											\
 		public:														\
-		enum {DPSG_PP_EXPAND(COUNT, __VA_ARGS__)}; 					\
+		enum value : 												\
+				typename dpsg::detail::filter_type<TYPE>::type 		\
+				{DPSG_PP_EXPAND(COUNT, __VA_ARGS__)}; 				\
 		NAME() : Base(Base::Count) {}								\
-		NAME(TYPE i) : Base(i) {} 									\
+		NAME(typename dpsg::detail::filter_type<TYPE>::type i) : 	\
+				Base(i) {} 											\
 	};
 
 #define DPSG_DECLARE_FLAG(type, name, ...) DPSG_DECLARE_FLAG_(type, name, DPSG_PP_NARG(__VA_ARGS__), __VA_ARGS__)
 
-namespace dpsg { namespace detail
-{
+namespace dpsg { namespace detail {
 
 template<class T>
 	struct filter_type { typedef typename std::remove_cv<typename std::make_unsigned<T>::type>::type type; };
 
 template<class T, char C>
-class BaseFlag
-{
+class BaseFlag {
+
 	public:
 		typedef T type;
 	private:
-		typedef BaseFlag<type, C>& this_t;
+		typedef BaseFlag<type, C> 	this_t;
+		typedef this_t& 			this_r;
+		typedef this_t*				this_p;
+		typedef this_t const *	 	this_p_c;
 		typedef char count_t;
+
 	public:
 		constexpr static count_t Count = C;
-		class proxy;
-		
-		class iterator : public std::iterator<std::random_access_iterator_tag, proxy>
-		{
-			typedef std::iterator<std::random_access_iterator_tag, proxy> traits;
-			typedef typename traits::difference_type difference_type;
 
+		template<typename P> class proxy_base;
+		typedef proxy_base<this_p> proxy;
+		typedef const proxy_base<this_p_c> const_proxy;
+
+		template<typename P>
+		class base_iterator : public std::iterator<std::random_access_iterator_tag, P> {
+			typedef typename std::remove_cv<P>::type proxy_t;
+			typedef typename proxy_t::pointer_t pointer_t;
+			typedef base_iterator<P> iter;
 			public:
-				iterator() = delete;
-				iterator(this_t r, count_t p = 0) : _proxy(r, 1) {move(p);}
-				inline iterator& operator++() {move(); return *this;}
-				inline iterator& operator++(int) 
-					{iterator tmp = *this; move(); return tmp;}
-				inline bool operator==(const iterator& it) { return _proxy.is_same(it._proxy); }
-				inline bool operator!=(const iterator& it) {return !(*this == it);}
-				inline proxy operator*() {return _proxy;}
-				inline proxy* operator->() {return &_proxy;}
+				base_iterator(pointer_t r, count_t p) : _proxy(r ,1) { 
+					move(_proxy._pos, p); 
+				}
+				
+				inline proxy_t operator*() { 
+					return _proxy; 
+				}
+
+				inline const proxy_t operator*() const { 
+					return _proxy; 
+				}
+
+				inline iter& operator++() {
+					move(_proxy._pos, 1); 
+					return *this;
+				}
+
+				inline iter& operator++(int) {
+					iter tmp = *this; move(); 
+					return tmp;
+				}
+
+				inline bool operator==(const iter& it) { 
+					return _proxy.is_same(it._proxy); 
+				}
+
+				inline bool operator!=(const iter& it) {
+					return !(*this == it);
+				}
+
+				inline proxy_t* operator->() {
+					return &_proxy;
+				}
 
 			private:
-				proxy _proxy;
-				inline void move(difference_type offset = 1) 
-				{
-					type& p = _proxy._pos;
-					if(offset > 0) 
-					{
-						if(p == 0)
-						{
-							p = 1;
-							if(--offset == 0) return;
-						}
-						if(p == ~Count) 
-							return;
-						else if(((p << offset) > (1 << (Count-1))) || (p << offset) == 0)
-							p = ~Count;
-						else 
-							p <<= offset;
-					}
-					else if(offset < 0)
-					{
-						offset = -offset;
-						p >> offset;
-					}
+				proxy_t _proxy;
+		};
+		typedef base_iterator<proxy> iterator;
+		typedef base_iterator<const_proxy> const_iterator;
+
+		template<typename B> 
+		class proxy_base {
+
+			public:
+				typedef B pointer_t;
+				proxy_base(pointer_t r, type p) : _ref(r), _pos(p) {}
+				operator bool() const { return is_set(); } 
+				bool is_set() const { return _ref->is_set(_pos); }
+				void set() { _ref->set(_pos); }
+				void unset() { _ref->unset(_pos); }
+				void toggle() { _ref->toggle(_pos); }
+				proxy_base<pointer_t>& operator=(bool b) { b ? set() : unset(); }
+			private:
+				friend class base_iterator<proxy>;
+				friend class base_iterator<const_proxy>;
+				pointer_t _ref;
+				type _pos;
+				inline bool is_same(const proxy_base<pointer_t>& o)const {
+					return o._pos == _pos && o._ref == _ref; 
 				}
 		};
 
-		class proxy
-		{
-			public: 
-				proxy(this_t r, count_t p) : _ref(r), _pos(p) {}
-				proxy& operator=(bool b) { b ? set() : unset(); return *this;}
-				operator bool() const { return is_set(); }
-				void set() { _ref.set(_pos); } 
-				void unset() { _ref.unset(_pos); }
-				void toggle() { _ref.toggle(_pos); }
-				bool is_set() const { return _ref.is_set(_pos); }
-				type debug() const { return _pos; }
-			private:
-				bool is_same(const proxy& p)
-					{return (_pos == p._pos) && (_ref == p._ref);}
-				friend class iterator;
-				this_t _ref;
-				type _pos;	
-		};
-
-		constexpr inline operator type() {return _value;}
-		inline bool is_set(type v) const {return _value & v;}
-		inline void set(type v) {_value |= v;}
-		inline void toggle(type v) {_value ^= v;}
-		inline void unset(type v) 
-		{
-			_value =~ (~_value | v);
+		constexpr inline operator type() {
+			return _value;
 		}
-		iterator begin() {return iterator(*this, 0);}
-		iterator end() {return iterator(*this, Count);}
-		//const_iterator begin() const { return const_iterator(*this, 0);}
-		//const_iterator begin() const { return const_iterator(*this, Count);}
+
+		inline bool is_set(type v) const {
+			return _value & v;
+		}
+
+		inline void set(type v) { 
+			_value |= v;
+		}
+
+		inline void toggle(type v) {
+			_value ^= v;
+		}
+
+		inline void unset(type v) { 
+			_value =~ (~_value | v); 
+		}
+
+		inline proxy operator[](type i) { 
+			return proxy(this, i); 
+		}
+
+		inline const_proxy operator[](type i) const { 
+			return const_proxy(this, i); 
+		}
+
+		inline iterator begin() {
+			return iterator(this, 0);
+		}
+
+		inline iterator end() {
+			return iterator(this, Count);
+		}
+
+		inline const_iterator begin() const { 
+			return const_iterator(this, 0);
+		}
+
+		inline const_iterator end() const { 
+			return const_iterator(this, Count);
+		}
+
 
 	protected:
 		BaseFlag(type i) : _value(i) {} 
@@ -152,8 +196,30 @@ class BaseFlag
 	
 	private: 
 		T _value;
+		static void move(type& p, count_t offset) {
+
+			if(offset > 0) 
+			{
+				if(p == 0)
+				{
+					p = 1;
+					if(--offset == 0) return;
+				}
+				if(p == ~Count) 
+					return;
+				else if(((p << offset) > (1 << (Count-1))) || (p << offset) == 0)
+					p = ~Count;
+				else 
+					p <<= offset;
+			}
+			else if(offset < 0)
+			{
+				offset = -offset;
+				p >> offset;
+			}
+
+		}
 };
 
 }}
-
 #endif
