@@ -107,7 +107,6 @@ class BaseFlag {
 
 				inline bool operator==(const iter& it) { 
 					return _proxy.is_same(it._proxy); 
-				}
 
 				inline bool operator!=(const iter& it) {
 					return !(*this == it);
