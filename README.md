@@ -41,7 +41,7 @@ to the bit (or bits if you feed several options to []).
 
 #### A quick cheatsheet 
 
-Macro:
+#####Macro:
 
     DPSG_DECLARE_FLAG(type, name, options...)
 This macro simply generate a class <name> and populate with an
@@ -51,7 +51,7 @@ of options you define thereafter or you'll get a compilation error (in the
 best case). Since the class don't support over 8 options yet it don't matter,
 just give **char**.
 
-Functions:
+#####Functions:
 
 These functions will be defined by DPSG_DECLARE_FLAG as members of the flag class. The type "type" in the following refers to the type used to declare the strong enum holding the options.
 
@@ -59,14 +59,18 @@ These functions will be defined by DPSG_DECLARE_FLAG as members of the flag clas
 Returns true if the option(s) sent as arguments are all
 set to true.
 
+
     void set(type options)
 Set the option(s) given to true.
+
 
     void unset(type options)
 Set the option(s) given to false.
 
+
     void toggle(type options)
 Set the given options to true if they were false and false if they were true.
+
 
     proxy operator[type options]
     const_proxy operator[type options] const
@@ -74,14 +78,17 @@ Returns a proxy to the option(s) given as arguments. A proxy can basically
 call set(), unset(), toggle() and is_set() on the bits they refer to. They
 also implicitely convert to **bool**.
 
+
 	iterator begin()
 	iterator end()
 	const_iterator begin() const
 	const_iterator end() const
-Does exactly what you would expect them to do. 
+Do exactly what you would expect them to do. 
+
 
     bool empty() const 
 Returns true if all the flags are set to false. True otherwise.
+
 
 	template<T> T to() const
 Convert the flags to a T. For compatibility. (will probably be changed to
