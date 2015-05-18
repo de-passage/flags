@@ -2,7 +2,7 @@
  * Wrapper class and helpers for flag manipulation
  *
  * Author: Sylvain Leclercq <maisbiensurqueoui@gmail.com>
- * Version: 0.1.0
+ * Version: 0.1.1
  *******************************************************/
 
 #ifndef DPSG_FLAGS_HPP
@@ -107,6 +107,7 @@ class BaseFlag {
 
 				inline bool operator==(const iter& it) { 
 					return _proxy.is_same(it._proxy); 
+				}
 
 				inline bool operator!=(const iter& it) {
 					return !(*this == it);
@@ -144,8 +145,13 @@ class BaseFlag {
 				}
 		};
 
-		constexpr inline operator type() {
-			return _value;
+		template<typename R>
+			inline R to() const { 
+				return static_cast<R>(_value);
+			}
+
+		inline bool empty() {
+			return ! _value;
 		}
 
 		inline bool is_set(type v) const {
