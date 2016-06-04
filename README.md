@@ -44,11 +44,11 @@ to the bit (or bits if you feed several options to []).
 #####Macro:
 
     DPSG_DECLARE_FLAG(type, name, options...)
-This macro simply generate a class <name> and populate with an
-enumeration (class enum of undelying type <type>) of <options>, as well as a
+This macro simply generate a class [name] and populate with an
+enumeration (class enum of undelying type [type]) of [options], as well as a
 few functions. The underlying type must be large enough to handle the number
 of options you define thereafter or you'll get a compilation error (in the
-best case). Since the class don't support over 8 options yet it don't matter,
+best case). Since the class does not support over 8 options yet it doesn't matter,
 just give **char**.
 
 #####Functions:
@@ -91,8 +91,7 @@ Returns true if all the flags are set to false. True otherwise.
 
 
 	template<T> T to() const
-Convert the flags to a T. For compatibility. (will probably be changed to
-**operator static_cast** in the near future)
+Converts the flags to a T. For compatibility.
 
 #### A word
 
