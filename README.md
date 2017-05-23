@@ -20,10 +20,10 @@ int main() {
     assert( !flags[MyFlags::option_3] );
 
     flags[MyFlags::option_1] = false;
-	assert( !flags[MyFlags::option_1].is_set() );
+    assert( !flags[MyFlags::option_1].is_set() );
 
-	flags.toggle(MyFlags::option_1) ;
-	assert( flags[MyFlags::option_1 | MyFlags::option_2] );
+    flags.toggle(MyFlags::option_1) ;
+    assert( flags[MyFlags::option_1 | MyFlags::option_2] );
     assert( !flags[MyFlags::option_3] );
 	
     flags.unset(MyFlags::option_1 | MyFlags::option_2);
@@ -43,7 +43,9 @@ to the bit (or bits if you feed several options to []).
 
 ##### Macro:
 
-    DPSG_DECLARE_FLAG(type, name, options...)
+~~~ cpp
+DPSG_DECLARE_FLAG(type, name, options...)
+~~~
 This macro simply generate a class [name] and populate with an
 enumeration (class enum of undelying type [type]) of [options], as well as a
 few functions. The underlying type must be large enough to handle the number
@@ -55,42 +57,54 @@ just give **char**.
 
 These functions will be defined by DPSG_DECLARE_FLAG as members of the flag class. The type "type" in the following refers to the type used to declare the strong enum holding the options.
 
-    bool is_set(type options) const
+~~~ cpp
+bool is_set(type options) const
+~~~
 Returns true if the option(s) sent as arguments are all
-set to true.
+set to true.  
+<br/>
 
+~~~ cpp
+void set(type options)
+~~~
+Set the option(s) given to true.  
+<br/>  
 
-    void set(type options)
-Set the option(s) given to true.
+~~~ cpp
+void unset(type options)
+~~~
+Set the option(s) given to false.  
+<br/>
 
-
-    void unset(type options)
-Set the option(s) given to false.
-
-
-    void toggle(type options)
-Set the given options to true if they were false and false if they were true.
-
-
-    proxy operator[type options]
-    const_proxy operator[type options] const
+~~~ cpp
+void toggle(type options)
+~~~
+Set the given options to true if they were false and false if they were true.  
+<br/>
+~~~ cpp
+proxy operator[type options]
+const_proxy operator[type options] const
+~~~
 Returns a proxy to the option(s) given as arguments. A proxy can basically
 call set(), unset(), toggle() and is_set() on the bits they refer to. They
-also implicitely convert to **bool**.
-
-
-	iterator begin()
-	iterator end()
-	const_iterator begin() const
-	const_iterator end() const
-Do exactly what you would expect them to do. 
-
-
-    bool empty() const 
-Returns true if all the flags are set to false. True otherwise.
-
-
-	template<T> T to() const
+also implicitely convert to **bool**.  
+<br/>
+~~~ cpp
+iterator begin()
+iterator end()
+const_iterator begin() const
+const_iterator end() const
+~~~
+Do exactly what you would expect them to do.   
+<br/>
+~~~ cpp
+bool empty() const 
+~~~
+Returns true if all the flags are set to false. True otherwise.  
+<br/>
+~~~ cpp
+template<T> T to() const
+~~~
 Converts the flags to a T. For compatibility.
 
 #### A word
