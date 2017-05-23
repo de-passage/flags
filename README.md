@@ -1,10 +1,10 @@
-####Flags
+#### Flags
 
 Flags are awesome, but bitwise arithmetic is annoying. Hence the wrapper. 
 
 Use like this : 
 
-~~~cpp
+~~~ cpp
 #include <cassert>
 #include "flags.hpp"
 
@@ -41,7 +41,7 @@ to the bit (or bits if you feed several options to []).
 
 #### A quick cheatsheet 
 
-#####Macro:
+##### Macro:
 
     DPSG_DECLARE_FLAG(type, name, options...)
 This macro simply generate a class [name] and populate with an
@@ -51,7 +51,7 @@ of options you define thereafter or you'll get a compilation error (in the
 best case). Since the class does not support over 8 options yet it doesn't matter,
 just give **char**.
 
-#####Functions:
+##### Functions:
 
 These functions will be defined by DPSG_DECLARE_FLAG as members of the flag class. The type "type" in the following refers to the type used to declare the strong enum holding the options.
 
